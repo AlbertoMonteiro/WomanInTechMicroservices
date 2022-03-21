@@ -1,0 +1,63 @@
+services:
+  pacote:
+    image: pacote
+    networks:
+      - viage_aqui
+      - pacote_svc
+    ports:
+      - 5000:80
+      - 5001:443
+    environment:
+      - Services__Voo=https://voo/
+      - Services__Hospedagem=https://hospedagem/
+      - ConnectionStrings__Database=Server=pacote_db;Initial Catalog=ViageAquiPacotes;User=sa;Password=yourStrong(!)Password
+  pacote_db:
+    image: mcr.microsoft.com/mssql/server
+    networks:
+      - pacote_svc
+      - hospedagem_svc
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=yourStrong(!)Password
+    ports:
+      - 1433:1433
+
+  hospedagem:
+    image: hospedagem
+    networks:
+      - pacote_svc
+      - hospedagem_svc
+    environment:
+      - ConnectionStrings__Database=Server=hospedagem_db;Initial Catalog=ViageAquiHoteis;User=sa;Password=yourStrong(!)Password
+  hospedagem_db:
+    image: mcr.microsoft.com/mssql/server
+    networks:
+      - hospedagem_svc
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=yourStrong(!)Password
+    ports:
+      - 1434:1433
+
+  voo:
+    image: voo
+    networks:
+      - viage_aqui
+      - voo_aqui
+    environment:
+      - ConnectionStrings__Database=Server=voo_db;Initial Catalog=ViageAquiVoos;User=sa;Password=yourStrong(!)Password
+  voo_db:
+    image: mcr.microsoft.com/mssql/server
+    networks:
+      - voo_aqui
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=yourStrong(!)Password
+    ports:
+      - 1435:1433
+
+networks:
+  viage_aqui:
+  pacote_svc:
+  hospedagem_svc:
+  voo_aqui:
