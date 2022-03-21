@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Refit;
 
 namespace WomanInTechMicroservices.Api;
 
@@ -10,6 +11,11 @@ public static class Startup
         services.AddSwaggerGen();
 
         services.AddDbContext<WomanInTechDbCtx>(x => x.UseSqlServer(configuration["ConnectionStrings:Database"]));
+
+        services.AddRefitClient<IVooApi>()
+            .ConfigureHttpClient(x => x.BaseAddress = new Uri(configuration["Services:Voo"]));
+        services.AddRefitClient<IHospedagemApi>()
+            .ConfigureHttpClient(x => x.BaseAddress = new Uri(configuration["Services:Hospedagem"]));
     }
 
     internal static void Configure(WebApplication app)
@@ -30,58 +36,11 @@ public static class Startup
 public class WomanInTechDbCtx : DbContext
 {
     public WomanInTechDbCtx(DbContextOptions<WomanInTechDbCtx> options)
-        :base(options)
+        : base(options)
     {
 
     }
-    public DbSet<Voo> Voos { get; set; }
-    public DbSet<Hotel> Hoteis { get; set; }
     public DbSet<Pacote> Pacotes { get; set; }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Voo>()
-            .HasData(new Voo(Guid.NewGuid(), "XPTO Airlines", 0, TimeSpan.FromHours(3),  1234.56m));
-        
-        modelBuilder.Entity<Hotel>()
-            .HasData(new Hotel(Guid.NewGuid(), "XPTO Airlines", 2, 654.99m));
-    }
-}
-
-public class Voo
-{
-    public Voo(Guid id, string compania, byte conexoes, TimeSpan duracao, decimal preco)
-    {
-        Id = id;
-        Compania = compania;
-        Conexoes = conexoes;
-        Duracao = duracao;
-        Preco = preco;
-    }
-
-    public Guid Id { get; set; }
-    public string Compania { get; set; }
-    public byte Conexoes { get; set; }
-    public TimeSpan Duracao { get; set; }
-    public decimal Preco { get; set; }
-    public bool Disponivel { get; set; } = true;
-}
-
-public class Hotel
-{
-    public Hotel(Guid id, string nome, byte quartos, decimal preco)
-    {
-        Id = id;
-        Nome = nome;
-        Quartos = quartos;
-        Preco = preco;
-    }
-
-    public Guid Id { get; set; }
-    public string Nome { get; set; }
-    public byte Quartos { get; set; }
-    public decimal Preco { get; set; }
-    public bool Disponivel { get; set; } = true;
 }
 
 public class Pacote
@@ -96,4 +55,31 @@ public class Pacote
     public Guid Id { get; set; }
     public Guid HospedagemId { get; set; }
     public Guid VooId { get; set; }
+}
+
+public interface IVooApi
+{
+    [Get("/api/voos/")]
+    Task<VooOutput[]> Voos();
+
+    [Post("/api/voos/{id}")]
+    Task<IApiResponse> Comprar(Guid id);
+
+    public record Duracao(byte Horas, byte Minutos)
+    {
+        public static implicit operator Duracao(TimeSpan timeSpan)
+            => new((byte)timeSpan.Hours, (byte)timeSpan.Minutes);
+    }
+    public record VooOutput(Guid Id, string Compania, Duracao Duracao, byte Conexoes, decimal Preco);
+}
+
+public interface IHospedagemApi
+{
+    [Get("/api/hoteis/")]
+    Task<HotelOutput[]> Hoteis();
+
+    [Post("/api/hoteis/{id}")]
+    Task<IApiResponse> Comprar(Guid id);
+
+    public record HotelOutput(Guid Id, string Nome, byte Quartos, decimal Preco);
 }
